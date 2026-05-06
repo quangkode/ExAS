@@ -4,12 +4,10 @@ import type { UserRole } from './types';
 
 // Layouts
 import AppLayout from './components/layout/AppLayout';
-import FarmerLayout from './components/layout/FarmerLayout';
 
 // Pages
 import Login from './pages/Login';
 import Unauthorized from './pages/Unauthorized';
-import FarmerDashboard from './pages/farmer/Dashboard';
 import AppDashboard from './pages/app/Dashboard';
 import LogNew from './pages/app/LogNew';
 import LogHistory from './pages/app/LogHistory';
@@ -37,7 +35,6 @@ function AppRoutes() {
 
   const getDefaultRoute = () => {
     if (!user) return '/login';
-    if (user.role === 'farmer') return '/farmer/dashboard';
     return '/app/dashboard';
   };
 
@@ -53,13 +50,6 @@ function AppRoutes() {
 
       {/* Unauthorized */}
       <Route path="/unauthorized" element={<Unauthorized />} />
-
-      {/* Farmer routes */}
-      <Route path="/farmer" element={
-        <RequireAuth><RequireRole roles={['farmer']}><FarmerLayout /></RequireRole></RequireAuth>
-      }>
-        <Route path="dashboard" element={<FarmerDashboard />} />
-      </Route>
 
       {/* Supervisor + Manager shared routes */}
       <Route path="/app" element={
