@@ -57,7 +57,13 @@ export function AppProviders({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(() => {
     const saved = localStorage.getItem('cococarbon_user');
     if (saved) {
-      try { return JSON.parse(saved); } catch { return null; }
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && ['farmer', 'supervisor', 'manager'].includes(parsed.role) && parsed.id) {
+          return parsed;
+        }
+        localStorage.removeItem('cococarbon_user');
+      } catch { /* ignore */ }
     }
     return null;
   });
