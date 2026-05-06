@@ -26,6 +26,14 @@ export const USERS = [
     role: 'verifier',
     avatar: null,
   },
+  {
+    id: 'verifier-002',
+    email: 'quang.exas@gmail.com',
+    password: '1234',
+    name: 'Trần Minh Quang',
+    role: 'verifier',
+    avatar: null,
+  },
 ];
 
 // ═══════════════════════════════════════════════════

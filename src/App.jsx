@@ -11,6 +11,7 @@ import FarmSettings from './pages/farmer/Settings';
 import VerifierDashboard from './pages/verifier/Dashboard';
 import VerifierReports from './pages/verifier/Reports';
 import FarmDetail from './pages/verifier/FarmDetail';
+import ExportReport from './pages/verifier/ExportReport';
 
 function ProtectedRoute({ children, allowedRole }) {
   const { user, isAuthenticated } = useAuth();
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<VerifierDashboard />} />
         <Route path="reports" element={<VerifierReports />} />
         <Route path="farm/:id" element={<FarmDetail />} />
+        <Route path="export/:reportId" element={<ExportReport />} />
       </Route>
 
       {/* Default redirect */}

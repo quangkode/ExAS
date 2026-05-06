@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import {
@@ -15,6 +15,7 @@ const TABS = [
   { id: 'fossil', label: 'Nhiên liệu hóa thạch', icon: Fuel },
   { id: 'lime', label: 'Vôi & Dolomite', icon: Mountain },
   { id: 'fertilizer', label: 'Phân bón', icon: Sprout },
+  { id: 'soc', label: 'Đo lường SOC', icon: FlaskConical },
 ];
 
 function getMoistureColor(v) {
@@ -35,9 +36,9 @@ export default function DataInput() {
   const [activeTab, setActiveTab] = useState('soil');
   const { user } = useAuth();
   const {
-    getFarmerFarm, getFarmSensors, getFarmFossil, getFarmLime, getFarmFertilizer,
+    getFarmerFarm, getFarmSensors, getFarmFossil, getFarmLime, getFarmFertilizer, getFarmSOC,
     addSoilSensor, deleteSoilSensor, addFossilFuel, deleteFossilFuel,
-    addLime, deleteLime, addFertilizer, deleteFertilizer
+    addLime, deleteLime, addFertilizer, deleteFertilizer, addSOC
   } = useData();
 
   const farm = getFarmerFarm(user.id);
@@ -121,6 +122,29 @@ export default function DataInput() {
     setFertForm({ ...fertForm, product_name: '', nitrogen_content_percent: '', quantity_kg: '', application_notes: '' });
   };
 
+  // ── SOC FORM ──
+  const [socForm, setSocForm] = useState({
+    measurement_date: format(new Date(), 'yyyy-MM-dd'),
+    season: 'start',
+    season_name: 'Vụ Đông Xuân 2025',
+    sample_id: '',
+    depth_cm: 30,
+    soc_value_ton_per_ha: '',
+    lab_name: '',
+    notes: '',
+  });
+
+  const handleSOCSubmit = (e) => {
+    e.preventDefault();
+    addSOC({
+      farm_id: farm.id,
+      ...socForm,
+      depth_cm: parseFloat(socForm.depth_cm),
+      soc_value_ton_per_ha: parseFloat(socForm.soc_value_ton_per_ha),
+    });
+    setSocForm({ ...socForm, sample_id: '', soc_value_ton_per_ha: '', lab_name: '', notes: '' });
+  };
+
   const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none transition-all text-sm";
   const labelCls = "block text-sm font-medium text-gray-700 mb-1.5";
   const btnCls = "w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg shadow-green-200 transition-all text-sm cursor-pointer";
@@ -134,6 +158,14 @@ export default function DataInput() {
   const fuelLabel = (v) => FUEL_OPTIONS.find(o => o.value === v)?.label || v;
   const limeLabel = (v) => LIME_OPTIONS.find(o => o.value === v)?.label || v;
   const fertLabel = (v) => FERTILIZER_OPTIONS.find(o => o.value === v)?.label || v;
+
+  const socRecords = getFarmSOC(farm?.id);
+  const socChange = useMemo(() => {
+    const start = socRecords.find(s => s.season === 'start');
+    const end = socRecords.find(s => s.season === 'end');
+    if (start && end) return (end.soc_value_ton_per_ha - start.soc_value_ton_per_ha).toFixed(2);
+    return null;
+  }, [socRecords]);
 
   return (
     <div className="page-enter max-w-5xl mx-auto">
@@ -462,6 +494,114 @@ export default function DataInput() {
                     <td>{f.nitrogen_content_percent}%</td>
                     <td className="font-semibold">{f.quantity_kg}</td>
                     <td><button onClick={() => deleteFertilizer(f.id)} className="text-red-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ══════ TAB 5: SOC ══════ */}
+      {activeTab === 'soc' && (
+        <div className="space-y-6">
+          {/* SOC Change computed card */}
+          {socChange !== null && (
+            <div className={`rounded-2xl p-5 border-2 shadow-sm ${parseFloat(socChange) >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+              <p className="text-sm font-medium text-gray-600 mb-1">🧪 Thay đổi SOC (Carbon hữu cơ đất)</p>
+              <p className={`text-3xl font-bold ${parseFloat(socChange) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {parseFloat(socChange) >= 0 ? '+' : ''}{socChange} tấn C/ha
+              </p>
+              <p className="text-xs text-gray-500 mt-1">{parseFloat(socChange) >= 0 ? '✅ Carbon được hấp thụ vào đất' : '⚠️ Carbon bị phát thải từ đất'}</p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl border border-green-100 p-6 shadow-sm">
+            <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FlaskConical size={18} className="text-teal-600" />
+              Đo lường SOC (Carbon hữu cơ đất)
+            </h3>
+            <form onSubmit={handleSOCSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Thời điểm đo</label>
+                <div className="flex gap-2">
+                  {['start', 'end'].map(s => (
+                    <button key={s} type="button"
+                      onClick={() => setSocForm({...socForm, season: s})}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                        socForm.season === s ? 'bg-teal-100 text-teal-700 border-2 border-teal-400' : 'bg-gray-50 text-gray-500 border-2 border-transparent'
+                      }`}>
+                      {s === 'start' ? '🟢 Đầu vụ' : '🔴 Cuối vụ'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Ngày đo</label>
+                <input type="date" value={socForm.measurement_date}
+                  onChange={e => setSocForm({...socForm, measurement_date: e.target.value})}
+                  className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Tên mùa vụ</label>
+                <input type="text" value={socForm.season_name}
+                  onChange={e => setSocForm({...socForm, season_name: e.target.value})}
+                  placeholder="VD: Vụ Đông Xuân 2025" className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Mã mẫu (Sample ID)</label>
+                <input type="text" value={socForm.sample_id}
+                  onChange={e => setSocForm({...socForm, sample_id: e.target.value})}
+                  placeholder="VD: S-01" className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Độ sâu lấy mẫu (cm)</label>
+                <input type="number" min="0" step="1" value={socForm.depth_cm}
+                  onChange={e => setSocForm({...socForm, depth_cm: e.target.value})}
+                  className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Giá trị SOC (tấn C/ha)</label>
+                <input type="number" min="0" step="0.01" value={socForm.soc_value_ton_per_ha}
+                  onChange={e => setSocForm({...socForm, soc_value_ton_per_ha: e.target.value})}
+                  placeholder="Kết quả từ phòng thí nghiệm" className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Tên phòng thí nghiệm</label>
+                <input type="text" value={socForm.lab_name}
+                  onChange={e => setSocForm({...socForm, lab_name: e.target.value})}
+                  placeholder="VD: Viện KH Nông nghiệp" className={inputCls} required />
+              </div>
+              <div>
+                <label className={labelCls}>Ghi chú</label>
+                <input type="text" value={socForm.notes}
+                  onChange={e => setSocForm({...socForm, notes: e.target.value})}
+                  placeholder="Mô tả vị trí lấy mẫu..." className={inputCls} />
+              </div>
+              <div className="md:col-span-2">
+                <button type="submit" className={btnCls}>💾 Lưu dữ liệu SOC</button>
+              </div>
+            </form>
+          </div>
+
+          {/* SOC records table */}
+          <div className="bg-white rounded-2xl border border-green-100 p-5 shadow-sm overflow-x-auto">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Lịch sử đo SOC</h4>
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-gray-500 border-b border-gray-100">
+                <th className="pb-2 font-medium">Thời điểm</th><th className="pb-2 font-medium">Mùa vụ</th>
+                <th className="pb-2 font-medium">Mẫu</th><th className="pb-2 font-medium">Độ sâu</th>
+                <th className="pb-2 font-medium">SOC (tấn C/ha)</th><th className="pb-2 font-medium">PTN</th>
+              </tr></thead>
+              <tbody>
+                {socRecords.map(s => (
+                  <tr key={s.id} className="border-b border-gray-50 table-row-hover">
+                    <td className="py-2.5">{s.season === 'start' ? '🟢 Đầu vụ' : '🔴 Cuối vụ'} — {s.measurement_date}</td>
+                    <td>{s.season_name}</td>
+                    <td>{s.sample_id}</td>
+                    <td>{s.depth_cm} cm</td>
+                    <td className="font-bold text-teal-700">{s.soc_value_ton_per_ha}</td>
+                    <td className="text-xs text-gray-500">{s.lab_name}</td>
                   </tr>
                 ))}
               </tbody>

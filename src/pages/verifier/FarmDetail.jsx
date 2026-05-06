@@ -190,7 +190,13 @@ export default function FarmDetail() {
                   <h4 className="font-semibold text-gray-800">{report.season_name || 'Báo cáo'}</h4>
                   <p className="text-xs text-gray-500">{report.season_start} → {report.season_end}</p>
                 </div>
-                <StatusBadge status={report.status} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={report.status} />
+                  <button onClick={(e) => { e.stopPropagation(); navigate(`/verifier/export/${report.id}`); }}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition cursor-pointer no-print">
+                    <Printer size={12} /> PDF
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-4 gap-3 mb-3">
                 <div className="bg-green-50 rounded-lg p-2.5 text-center">
