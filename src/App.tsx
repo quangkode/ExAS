@@ -27,7 +27,8 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 function RequireRole({ children, roles }: { children: React.ReactNode; roles: UserRole[] }) {
   const { user } = useAuth();
-  if (!user || !roles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!roles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
   return <>{children}</>;
 }
 
@@ -42,6 +43,9 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to={isAuthenticated ? getDefaultRoute() : '/login'} replace />} />
+
       {/* Login */}
       <Route path="/login" element={
         isAuthenticated ? <Navigate to={getDefaultRoute()} replace /> : <Login />
